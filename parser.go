@@ -3,6 +3,7 @@ package fastjson
 import (
 	"fmt"
 	"github.com/valyala/fastjson/fastfloat"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf16"
@@ -452,6 +453,7 @@ func parseRawNumber(s string) (string, string, error) {
 type Object struct {
 	kvs           []kv
 	keysUnescaped bool
+	kvsOrdered    bool
 }
 
 func (o *Object) reset() {
@@ -462,7 +464,18 @@ func (o *Object) reset() {
 // MarshalTo appends marshaled o to dst and returns the result.
 func (o *Object) MarshalTo(dst []byte) []byte {
 	dst = append(dst, '{')
-	for i, kv := range o.kvs {
+	kvs := o.kvs
+
+	if o.kvsOrdered {
+		// copy kvs and sort them alphabetically by keys
+		kvs := make([]kv, len(o.kvs))
+		copy(kvs, o.kvs)
+		sort.Slice(kvs, func(i, j int) bool {
+			return kvs[i].k < kvs[j].k
+		})
+	}
+
+	for i, kv := range kvs {
 		if o.keysUnescaped {
 			dst = escapeString(dst, kv.k)
 		} else {
@@ -472,7 +485,7 @@ func (o *Object) MarshalTo(dst []byte) []byte {
 		}
 		dst = append(dst, ':')
 		dst = kv.v.MarshalTo(dst)
-		if i != len(o.kvs)-1 {
+		if i != len(kvs)-1 {
 			dst = append(dst, ',')
 		}
 	}
@@ -570,6 +583,12 @@ type Value struct {
 	a []*Value
 	s string
 	t Type
+}
+
+// SortObjectMembers sorts members of the underlying object when marshalling it.
+func (v *Value) SortObjectMembers() *Value {
+	v.o.kvsOrdered = true
+	return v
 }
 
 // MarshalTo appends marshaled v to dst and returns the result.
