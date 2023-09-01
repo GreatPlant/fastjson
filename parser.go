@@ -585,9 +585,25 @@ type Value struct {
 	t Type
 }
 
-// SortObjectMembers sorts members of the underlying object when marshalling it.
+// SortObjectMembers sorts members of the underlying Object when marshalling it.
+//
+// This method will recursively add flag sortOrdering
+// to all nested objects.
+// Then the Value will be marshaling, all fields will be sorted in
+// alphabetically order.
 func (v *Value) SortObjectMembers() *Value {
-	v.o.kvsOrdered = true
+	switch v.t {
+	case TypeObject:
+		v.o.kvsOrdered = true
+		for _, kv := range v.o.kvs {
+			kv.v.SortObjectMembers()
+		}
+	case TypeArray:
+		for _, vi := range v.a {
+			vi.SortObjectMembers()
+		}
+	}
+
 	return v
 }
 
