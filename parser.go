@@ -468,7 +468,7 @@ func (o *Object) MarshalTo(dst []byte) []byte {
 
 	if o.kvsOrdered {
 		// copy kvs and sort them alphabetically by keys
-		kvs := make([]kv, len(o.kvs))
+		kvs = make([]kv, len(o.kvs))
 		copy(kvs, o.kvs)
 		sort.Slice(kvs, func(i, j int) bool {
 			return kvs[i].k < kvs[j].k
